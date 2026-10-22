@@ -8,7 +8,7 @@ The project uses the US Accidents dataset and an Artificial Neural Network (ANN)
 
 ## Live Demo
 
-Streamlit App: []
+Streamlit App: [https://jasla123-accident-severity-deep-learning-app-zxccsc.streamlit.app/]
 
 ## Objectives
 
