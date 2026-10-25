@@ -1,5 +1,8 @@
 from datetime import date, time
 from pathlib import Path
+import geopy.geocoders
+from geopy.geocoders import Nominatim
+
 
 import joblib
 import numpy as np
@@ -359,25 +362,80 @@ def render_overview():
 def render_prediction_form(category_options):
     st.markdown("### Accident details")
     st.caption("Enter the available accident, weather, road, and time conditions.")
+    # Location search: city or place name
+    st.markdown("#### Choose accident location")
+
+    if "accident_latitude" not in st.session_state:
+        st.session_state["accident_latitude"] = 37.7749
+        st.session_state["accident_longitude"] = -122.4194
+        st.session_state["accident_place"] = "San Francisco, California"
+
+    place_query = st.text_input(
+        "City / Place / State",
+        placeholder="Example: Kottakkal, Kerala, India",
+        key="place_search_input",
+    )
+
+    if st.button("Search location", key="search_location_button"):
+        if not place_query.strip():
+            st.warning("Please enter a city or place name.")
+        else:
+            try:
+                geolocator = Nominatim(
+                    user_agent="roadsafe_ai_accident_severity_app"
+                )
+                found_place = geolocator.geocode(
+                    place_query.strip(),
+                    timeout=10,
+                )
+
+                if found_place is None:
+                    st.warning(
+                        "Location not found. Try a more specific place name."
+                    )
+                else:
+                    st.session_state["accident_latitude"] = (
+                        found_place.latitude
+                    )
+                    st.session_state["accident_longitude"] = (
+                        found_place.longitude
+                    )
+                    st.session_state["accident_place"] = (
+                        found_place.address
+                    )
+                    st.success(
+                        f"Selected: {found_place.address}"
+                    )
+            except Exception:
+                st.error(
+                    "Could not find the location. Check your internet "
+                    "connection and try again."
+                )
+
+    st.caption(
+        f"Selected location: "
+        f"{st.session_state['accident_place']}"
+    )
+    st.caption(
+        f"Coordinates: "
+        f"{st.session_state['accident_latitude']:.5f}, "
+        f"{st.session_state['accident_longitude']:.5f}"
+    )
     with st.form("accident_prediction_form"):
         with st.container(border=True):
             st.markdown("**1. Accident and location**")
-            location_columns = st.columns(3)
-            latitude = location_columns[0].number_input(
-                "Accident Latitude (North–South)",
-                min_value=-90.0,
-                max_value=90.0,
-                value=37.7749,
-                format="%.6f",
+            location_columns = st.columns(2)
+
+            latitude = st.session_state["accident_latitude"]
+            longitude = st.session_state["accident_longitude"]
+
+            location_columns[0].text_input(
+                "Selected place",
+                value=st.session_state["accident_place"],
+                disabled=True,
             )
-            longitude = location_columns[1].number_input(
-                "Accident Longitude (East–West)",
-                min_value=-180.0,
-                max_value=180.0,
-                value=-122.4194,
-                format="%.6f",
-            )
-            distance = location_columns[2].number_input(
+
+            distance = location_columns[1].number_input(
                 "Distance (miles)",
                 min_value=0.0,
                 value=0.1,
@@ -479,7 +537,9 @@ def render_prediction_form(category_options):
             "Start_Hour": start_time.hour,
             "Start_Month": start_date.month,
             "Start_DayOfWeek": start_date.weekday(),
-        }
+            "Selected_Place":st.session_state["accident_place"],
+        }        
+        
 
         submitted = st.form_submit_button(
             "✦  Predict severity",
@@ -525,8 +585,7 @@ def render_prediction_result():
         with st.container(border=True):
             st.markdown("**Submitted conditions**")
             st.caption(
-                f"Location · {input_values['Start_Lat']:.4f}, "
-                f"{input_values['Start_Lng']:.4f}"
+                f"Location · {input_values.get('Selected_Place', 'Unknown')}"
             )
             st.caption(
                 f"Weather · {input_values['Weather_Condition']} · "
