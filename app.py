@@ -1,9 +1,7 @@
-
 from datetime import date, time
 from pathlib import Path
-import geopy.geocoders
-from geopy.geocoders import Nominatim
 
+from geopy.geocoders import Nominatim
 import joblib
 import numpy as np
 import pandas as pd
@@ -11,29 +9,13 @@ import streamlit as st
 import torch
 import torch.nn as nn
 
-
-MODEL_DIR = Path(__file__).resolve().parent / "saved_model"
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_DIR = BASE_DIR / "saved_model"
 FEATURE_FILE = MODEL_DIR / "feature_columns.joblib"
 PREPROCESSOR_FILE = MODEL_DIR / "preprocessor.joblib"
 MODEL_FILE = MODEL_DIR / "accident_severity_model.pth"
-HERO_IMAGE = Path(__file__).resolve().parent / "assets" / "accident_hero.jpg"
-SCENE_IMAGE = Path(__file__).resolve().parent / "assets" / "accident_scene.jpg"
-
-ROAD_FEATURES = {
-    "Amenity": "Amenity",
-    "Bump": "Bump",
-    "Crossing": "Crossing",
-    "Give_Way": "Give way",
-    "Junction": "Junction",
-    "No_Exit": "No exit",
-    "Railway": "Railway",
-    "Roundabout": "Roundabout",
-    "Station": "Station",
-    "Stop": "Stop",
-    "Traffic_Calming": "Traffic calming",
-    "Traffic_Signal": "Traffic signal",
-    "Turning_Loop": "Turning loop",
-}
+HERO_IMAGE = BASE_DIR / "assets" / "accident_hero.jpg"
+SCENE_IMAGE = BASE_DIR / "assets" / "accident_scene.jpg"
 
 SEVERITY_LABELS = {
     1: "Severity 1",
@@ -71,8 +53,7 @@ def load_model_assets():
     ]
     if missing_files:
         raise FileNotFoundError(
-            f"Missing model artifact(s) in {MODEL_DIR}: "
-            f"{', '.join(missing_files)}"
+            f"Missing model artifact(s) in {MODEL_DIR}: {', '.join(missing_files)}"
         )
 
     feature_columns = joblib.load(FEATURE_FILE)
@@ -101,7 +82,8 @@ def get_category_options(preprocessor) -> dict[str, list[str]]:
 
 
 def predict_severity(input_values, feature_columns, preprocessor, model):
-    raw_features = pd.DataFrame([input_values], columns=feature_columns)
+    # Any model features not supplied by the form become missing values here.
+    raw_features = pd.DataFrame([input_values]).reindex(columns=feature_columns)
     processed_features = preprocessor.transform(raw_features)
     if hasattr(processed_features, "toarray"):
         processed_features = processed_features.toarray()
@@ -139,12 +121,8 @@ def render_styles():
                 linear-gradient(145deg, #04162c 0%, #061d38 55%, #04172e 100%);
             color: var(--text);
         }
-        header[data-testid="stHeader"] {
-            background: transparent;
-        }
-        #MainMenu, footer {
-            visibility: hidden;
-        }
+        header[data-testid="stHeader"] { background: transparent; }
+        #MainMenu, footer { visibility: hidden; }
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #061a33 0%, #04152a 100%);
             border-right: 1px solid #123554;
@@ -186,9 +164,7 @@ def render_styles():
             line-height: 1.08;
             letter-spacing: -.035em;
         }
-        .hero h1 span {
-            color: #2995ff;
-        }
+        .hero h1 span { color: #2995ff; }
         .hero p {
             max-width: 540px;
             margin: .42rem 0 .55rem;
@@ -225,20 +201,14 @@ def render_styles():
             border-radius: 14px;
             background: linear-gradient(115deg, rgba(9, 94, 103, .82), rgba(8, 67, 83, .8));
         }
-        .result-banner .result-label {
-            color: #9be9dc;
-            font-size: .78rem;
-        }
+        .result-banner .result-label { color: #9be9dc; font-size: .78rem; }
         .result-banner .result-number {
             margin: .12rem 0;
             color: white;
             font-size: 1.65rem;
             font-weight: 750;
         }
-        .result-banner .result-description {
-            color: #c4eee9;
-            font-size: .82rem;
-        }
+        .result-banner .result-description { color: #c4eee9; font-size: .82rem; }
         div[data-testid="stVerticalBlockBorderWrapper"] {
             border-color: var(--line);
             border-radius: 14px;
@@ -250,12 +220,8 @@ def render_styles():
             border-radius: 11px;
             background: rgba(8, 46, 79, .64);
         }
-        div[data-testid="stMetricLabel"] {
-            color: #a9c7df;
-        }
-        div[data-testid="stMetricValue"] {
-            color: #f0f7ff;
-        }
+        div[data-testid="stMetricLabel"] { color: #a9c7df; }
+        div[data-testid="stMetricValue"] { color: #f0f7ff; }
         .stButton > button, .stFormSubmitButton > button {
             border: 1px solid #278cf4;
             border-radius: 10px;
@@ -278,18 +244,10 @@ def render_styles():
             border-color: #1b4b73;
             background-color: #082747;
         }
-        hr {
-            border-color: #164366;
-        }
+        hr { border-color: #164366; }
         @media (max-width: 800px) {
-            .hero {
-                min-height: 0;
-                padding: 1.1rem;
-            }
-            [data-testid="stSidebar"] {
-                min-width: 0;
-                max-width: 100%;
-            }
+            .hero { min-height: 0; padding: 1.1rem; }
+            [data-testid="stSidebar"] { min-width: 0; max-width: 100%; }
         }
         </style>
         """,
@@ -331,9 +289,7 @@ def render_hero():
                 <div class="hero">
                     <div class="hero-kicker">US accidents dataset</div>
                     <h1>Road Accident<br><span>Severity Prediction</span></h1>
-                    <p>
-                        Use real-world accident data to help make roads safer.
-                    </p>
+                    <p>Use real-world accident data to help make roads safer.</p>
                     <div class="hero-badges">
                         <span>Real US accident data</span>
                         <span>Deep Learning Model (ANN)</span>
@@ -347,7 +303,7 @@ def render_hero():
             st.image(
                 str(HERO_IMAGE),
                 width="stretch",
-                alt="Accident scene with emergency vehicles at dusk",
+                caption=None,
             )
 
 
@@ -363,7 +319,7 @@ def render_overview():
 
 def render_prediction_form(category_options):
     st.markdown("### Accident details")
-    st.caption("Enter the available accident, weather, road, and time conditions.")
+    st.caption("Enter the available accident and weather conditions.")
     st.markdown("#### Choose accident location")
 
     if "accident_latitude" not in st.session_state:
@@ -385,25 +341,13 @@ def render_prediction_form(category_options):
                 geolocator = Nominatim(
                     user_agent="roadsafe_ai_accident_severity_app"
                 )
-                found_place = geolocator.geocode(
-                    place_query.strip(),
-                    timeout=10,
-                )
-
+                found_place = geolocator.geocode(place_query.strip(), timeout=10)
                 if found_place is None:
-                    st.warning(
-                        "Location not found. Try a more specific place name."
-                    )
+                    st.warning("Location not found. Try a more specific place name.")
                 else:
-                    st.session_state["accident_latitude"] = (
-                        found_place.latitude
-                    )
-                    st.session_state["accident_longitude"] = (
-                        found_place.longitude
-                    )
-                    st.session_state["accident_place"] = (
-                        found_place.address
-                    )
+                    st.session_state["accident_latitude"] = found_place.latitude
+                    st.session_state["accident_longitude"] = found_place.longitude
+                    st.session_state["accident_place"] = found_place.address
                     st.success(f"Selected: {found_place.address}")
             except Exception:
                 st.error(
@@ -411,21 +355,16 @@ def render_prediction_form(category_options):
                     "connection and try again."
                 )
 
+    st.caption(f"Selected location: {st.session_state['accident_place']}")
     st.caption(
-        f"Selected location: "
-        f"{st.session_state['accident_place']}"
-    )
-    st.caption(
-        f"Coordinates: "
-        f"{st.session_state['accident_latitude']:.5f}, "
+        f"Coordinates: {st.session_state['accident_latitude']:.5f}, "
         f"{st.session_state['accident_longitude']:.5f}"
     )
 
     with st.form("accident_prediction_form"):
         with st.container(border=True):
-            st.markdown("**1. Accident and location**")
+            st.markdown("1. Accident and location")
             location_columns = st.columns(2)
-
             latitude = st.session_state["accident_latitude"]
             longitude = st.session_state["accident_longitude"]
 
@@ -434,7 +373,6 @@ def render_prediction_form(category_options):
                 value=st.session_state["accident_place"],
                 disabled=True,
             )
-
             distance = location_columns[1].number_input(
                 "Distance (miles)",
                 min_value=0.0,
@@ -480,17 +418,15 @@ def render_prediction_form(category_options):
             wind_direction = weather_columns[0].selectbox(
                 "Wind direction",
                 wind_options,
-                index=wind_options.index("Calm")
-                if "Calm" in wind_options
-                else 0,
+                index=wind_options.index("Calm") if "Calm" in wind_options else 0,
             )
             weather_condition = weather_columns[1].selectbox(
                 "Weather condition",
                 weather_options,
-                index=weather_options.index("Clear")
-                if "Clear" in weather_options
-                else 0,
+                index=weather_options.index("Clear") if "Clear" in weather_options else 0,
             )
+
+        # Road Features and Date and Time Features boxes have been removed.
 
         input_values = {
             "Start_Lat": latitude,
@@ -504,18 +440,6 @@ def render_prediction_form(category_options):
             "Wind_Speed(mph)": wind_speed,
             "Precipitation(in)": precipitation,
             "Weather_Condition": weather_condition,
-            **{
-                feature: "False"
-                for feature in ROAD_FEATURES
-            },
-            "Sunrise_Sunset": (
-                "Day"
-                if "Day" in category_options["Sunrise_Sunset"]
-                else category_options["Sunrise_Sunset"][0]
-            ),
-            "Start_Hour": start_time.hour,
-            "Start_Month": start_date.month,
-            "Start_DayOfWeek": start_date.weekday(),
             "Selected_Place": st.session_state["accident_place"],
         }
 
@@ -532,7 +456,7 @@ def render_prediction_result():
     result = st.session_state.get("prediction_result")
     if result is None:
         with st.container(border=True):
-            st.markdown("**Prediction ready**")
+            st.markdown("Prediction ready")
             st.caption(
                 "Complete the form and select Predict severity to see the "
                 "model result and class probabilities."
@@ -553,7 +477,7 @@ def render_prediction_result():
         )
         st.write("")
         with st.container(border=True):
-            st.markdown("**Class probabilities**")
+            st.markdown("Class probabilities")
             for class_index, probability in enumerate(probabilities, start=1):
                 probability_columns = st.columns([1.1, 3.5, 0.7])
                 probability_columns[0].caption(SEVERITY_LABELS[class_index])
@@ -562,12 +486,10 @@ def render_prediction_result():
 
         with st.container(border=True):
             st.markdown("**Submitted conditions**")
+            st.caption(f"Location · {input_values.get('Selected_Place', 'Unknown')}")
             st.caption(
-                f"Location · {input_values.get('Selected_Place', 'Unknown')}"
-            )
-            st.caption(
-                f"Weather · {input_values['Weather_Condition']} · "
-                f"{input_values['Wind_Direction']}"
+                f"Weather · {input_values.get('Weather_Condition', 'Unknown')} · "
+                f"{input_values.get('Wind_Direction', 'Unknown')}"
             )
             st.caption(f"Time · {result['start_datetime']} UTC")
 
@@ -597,15 +519,10 @@ def render_prediction_result():
                 longitude="longitude",
                 zoom=11,
                 height=150,
-                alt="Map showing the accident location",
             )
         with scene_column:
             st.markdown("**Accident image**")
-            st.image(
-                str(SCENE_IMAGE),
-                width="stretch",
-                alt="Two vehicles involved in an accident",
-            )
+            st.image(str(SCENE_IMAGE), width="stretch")
 
 
 def render_dashboard(feature_columns, preprocessor, model):
@@ -648,68 +565,4 @@ def render_dataset_info(feature_columns, preprocessor):
         "notebook. The source dataset contains 7,728,394 records and 46 "
         "original columns; this model uses a selected set of 28 input features."
     )
-    metrics = st.columns(3)
-    metrics[0].metric("Source records", "7,728,394")
-    metrics[1].metric("Model inputs", len(feature_columns))
-    metrics[2].metric("Severity classes", "4")
-    st.subheader("Model input columns")
-    st.dataframe(
-        pd.DataFrame({"Feature": feature_columns}),
-        hide_index=True,
-        height=520,
-    )
-    st.caption(
-        "Numeric values are imputed and scaled; categorical values are "
-        "imputed and one-hot encoded by the saved preprocessing pipeline."
-    )
-    st.caption(
-        f"Categorical input fields: "
-        f"{len(preprocessor.transformers_[1][2])}"
-    )
-
-
-def render_about():
-    st.title("About this project")
-    st.write(
-        "RoadSafe AI provides a front end for the saved accident severity "
-        "model in this project. It submits the same model features used "
-        "during training, applies the saved preprocessing pipeline, and "
-        "displays the predicted severity class with all four class "
-        "probabilities."
-    )
-    st.info(
-        "The model output is an estimate based on its training data. "
-        "Actual severity can differ based on real-world conditions."
-    )
-
-
-def render_contact():
-    st.title("Contact")
-    st.write(
-        "This project does not currently define contact details or a support "
-        "endpoint. Add your preferred contact information here when available."
-    )
-
-
-def main():
-    st.set_page_config(
-        page_title="RoadSafe AI | Accident Severity",
-        page_icon="🚘",
-        layout="wide",
-        initial_sidebar_state="expanded",
-    )
-    render_styles()
-    page = render_sidebar()
-    feature_columns, preprocessor, model = load_model_assets()
-
-    if page in {"Home", "Predict"}:
-        render_dashboard(feature_columns, preprocessor, model)
-    elif page == "Dataset Info":
-        render_dataset_info(feature_columns, preprocessor)
-    elif page == "About":
-        render_about()
-    else:
-        render_contact()
-
-
-main()
+    metrics =
