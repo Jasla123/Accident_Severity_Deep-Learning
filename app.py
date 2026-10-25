@@ -565,4 +565,68 @@ def render_dataset_info(feature_columns, preprocessor):
         "notebook. The source dataset contains 7,728,394 records and 46 "
         "original columns; this model uses a selected set of 28 input features."
     )
-    metrics =
+    metrics = st.columns(3)
+    metrics[0].metric("Source records", "7,728,394")
+    metrics[1].metric("Model inputs", len(feature_columns))
+    metrics[2].metric("Severity classes", "4")
+    st.subheader("Model input columns")
+    st.dataframe(
+        pd.DataFrame({"Feature": feature_columns}),
+        hide_index=True,
+        height=520,
+    )
+    st.caption(
+        "Numeric values are imputed and scaled; categorical values are "
+        "imputed and one-hot encoded by the saved preprocessing pipeline."
+    )
+    st.caption(
+        f"Categorical input fields: {len(preprocessor.transformers_[1][2])}"
+    )
+
+
+def render_about():
+    st.title("About this project")
+    st.write(
+        "RoadSafe AI provides a front end for the saved accident severity "
+        "model in this project. It submits the same model features used "
+        "during training, applies the saved preprocessing pipeline, and "
+        "displays the predicted severity class with all four class "
+        "probabilities."
+    )
+    st.info(
+        "The model output is an estimate based on its training data. "
+        "Actual severity can differ based on real-world conditions."
+    )
+
+
+def render_contact():
+    st.title("Contact")
+    st.write(
+        "This project does not currently define contact details or a support "
+        "endpoint. Add your preferred contact information here when available."
+    )
+
+
+def main():
+    st.set_page_config(
+        page_title="RoadSafe AI | Accident Severity",
+        page_icon="🚘",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+    render_styles()
+    page = render_sidebar()
+    feature_columns, preprocessor, model = load_model_assets()
+
+    if page in {"Home", "Predict"}:
+        render_dashboard(feature_columns, preprocessor, model)
+    elif page == "Dataset Info":
+        render_dataset_info(feature_columns, preprocessor)
+    elif page == "About":
+        render_about()
+    else:
+        render_contact()
+
+
+if __name__ == "__main__":
+    main()
